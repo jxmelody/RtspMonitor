@@ -13,7 +13,7 @@
 
 
 VLCPlayer::VLCPlayer(QWidget *parent)
-    : QMainWindow(parent), m_row(1), m_column(1)
+    : QMainWindow(parent), m_row(2), m_column(2)
 {
 	
 	ui = new Ui::VLCPlayerClass;
@@ -37,18 +37,19 @@ VLCPlayer::VLCPlayer(QWidget *parent)
 
 	ui->container->setLayout(m_manager);
 	
-	for (int i = 0; i < m_row; ++i)
-	{
-		for (int j = 0; j < m_column;++j)
-		{
-			m_playerSet.append(m_manager->getItemAtPosition(i, j));
-		}
-	}
+//	for (int i = 0; i < m_row; ++i)
+//	{
+//		for (int j = 0; j < m_column;++j)
+//		{
+//			m_playerSet.append(m_manager->getItemAtPosition(i, j));
+//		}
+//	}
 
-	for (auto& player : m_playerSet)
-	{
-		connect(player->ffmpeg(), SIGNAL(GetImage(const QImage &)), player, SLOT(setImage(const QImage&)));
-	}
+//    for (auto& player : m_playerSet)
+//    {
+//        connect(player->ffmpeg(), SIGNAL(GetImage(const QImage &)), player, SLOT(setImage(const QImage&)));
+//        connect(player->usbCam(), SIGNAL(getUsbCamImage(const QImage &)), player, SLOT(setImage(const QImage&)));
+//    }
 	
 	connect(ui->play, SIGNAL(clicked()), this, SLOT(Play()));
 	connect(ui->replay, SIGNAL(clicked()), this, SLOT(Replay()));
@@ -69,6 +70,7 @@ VLCPlayer::~VLCPlayer()
 {
 	delete ui;
 	delete m_rtsp;
+    delete m_rtsp_url;
 	delete m_configDlg;
 	delete m_manager;
 	
@@ -142,32 +144,44 @@ void VLCPlayer::OpenRTSP()
 
 void VLCPlayer::recvFile(QString& file, QString &path,QString& format)
 {
-	
-	for (auto& player : m_playerSet)
-	{
-		if (!player->isActive())
-		{
-			ui->play->setIcon(QIcon(":/Resources/pause.png"));
-			player->setUrl(file);
-//			player->setOutFile(path);
-            player->setOutPath(path, format);
-            player->startPlaying();
-		}
-	}
-
+    int row, col;
+    if (m_manager->getAFreeWindow(row, col) < 0) return ;
+    m_manager->setNextWindow(row, col);
+    MonitorWindow *player = m_manager->getItemAtPosition(row, col);
+    m_playerSet.append(player);
+    if (!player->isActive())
+    {
+        ui->play->setIcon(QIcon(":/Resources/pause.png"));
+        player->setUrl(file);
+        player->setOutPath(path, format);
+        player->startPlaying();
+    }
 }
 
-void::VLCPlayer::recvDevice(QString& rtsp, QString& deviceName)
+void VLCPlayer::recvDevice(QString& rtsp, QString& deviceName)
 {
-    for(auto& player : m_playerSet)
+    int row, col;
+    if (m_manager->getAFreeWindow(row, col) < 0) return ;
+    m_manager->setNextWindow(row, col);
+    MonitorWindow *player = m_manager->getItemAtPosition(row, col);
+    m_playerSet.append(player);
+    if(!player->isActive())
     {
-        if(!player->isActive())
+        ui->play->setIcon(QIcon(":/Resources/pause.png"));
+        if(!rtsp.compare(QString("local"),Qt::CaseInsensitive ))
         {
-            ui->play->setIcon(QIcon(":/Resources/pause.png"));
+            connect(player->usbCam(), SIGNAL(getUsbCamImage(const QImage &)), player, SLOT(setImage(const QImage&)));
+            player->openUSBCam();
+            player->startPlaying();
+        }
+        else
+        {
+            connect(player->ffmpeg(), SIGNAL(GetImage(const QImage &)), player, SLOT(setImage(const QImage&)));
             player->setRtspUrl(rtsp);
             player->startPlaying();
         }
     }
+
 }
 
 void VLCPlayer::recvConfig(int row, int column)
@@ -179,18 +193,20 @@ void VLCPlayer::recvConfig(int row, int column)
 
 	m_playerSet.clear();
 
-	for (int i = 0; i < m_row; ++i)
-	{
-		for (int j = 0; j < m_column; ++j)
-		{
-			m_playerSet.append(m_manager->getItemAtPosition(i, j));
-		}
-	}
+//	for (int i = 0; i < m_row; ++i)
+//	{
+//		for (int j = 0; j < m_column; ++j)
+//		{
+//			m_playerSet.append(m_manager->getItemAtPosition(i, j));
+//		}
+//	}
 
-	for (auto &player : m_playerSet)
-	{
-		connect(player->ffmpeg(), SIGNAL(GetImage(const QImage &)), player, SLOT(setImage(const QImage&)));
-	}
+//	for (auto &player : m_playerSet)
+//	{
+//		connect(player->ffmpeg(), SIGNAL(GetImage(const QImage &)), player, SLOT(setImage(const QImage&)));
+//	}
+
+
 
 }
 

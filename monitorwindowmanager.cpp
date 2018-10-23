@@ -3,13 +3,16 @@
 #include "monitorwindow.h"
 
 MonitorWindowManager::MonitorWindowManager(int row, int column, QWidget *parent)
-	:QGridLayout(parent)
+    :QGridLayout(parent)
 {
 	m_numOfWindows = row*column;
 	m_row = row;
 	m_column = column;
 	m_parent = parent;
-	
+    m_used_grid = 0;
+    m_current_col = 0;
+    m_current_row = 0;
+
 	for (int i = 0; i < row; ++i)
 	{
 		for (int j = 0; j < column; ++j)
@@ -32,7 +35,6 @@ int MonitorWindowManager::numOfWindows() const
 void MonitorWindowManager::setMonitorLayout(int row, int column)
 {
 	m_numOfWindows = row*column;
-	
 	// 删除并重新创建监视窗口
 
 	for (int i = 0; i < m_row; ++i)
@@ -51,6 +53,8 @@ void MonitorWindowManager::setMonitorLayout(int row, int column)
 			this->addWidget(new MonitorWindow(m_parent), i, j);
 		}
 	}
+    m_row = row;
+    m_column = column;
 
 
 }
@@ -79,7 +83,7 @@ void MonitorWindowManager::deleteChildWidgets(QLayoutItem *item)
 	if (item->layout()) 
 	{
 		// Process all child items recursively.
-		for (int i = 0; i < item->layout()->count(); i++) 
+        for (int i = 0; i < item->layout()->count(); i++)
 		{
 			deleteChildWidgets(item->layout()->itemAt(i));
 		}
@@ -98,4 +102,34 @@ MonitorWindow* MonitorWindowManager::getItemAtPosition(int row, int column)
 	return nullptr;
 }
 
+int MonitorWindowManager::setNextWindow(const int& row, const int& column)
+{
+    m_current_row = row;
+    m_current_col = column;
+    m_used_grid |= 0x01 << (row * m_column + column );
+    return 0;
+}
 
+int MonitorWindowManager::getAFreeWindow(int& row, int& column)
+{
+    int used_grid = m_used_grid;
+    int current_point = 0;
+    m_current_col = -1;
+    m_current_row = -1;
+    while(used_grid & 0x01 )
+    {
+        used_grid=used_grid>>1;
+        current_point++;
+    }
+    if(current_point >= m_row*m_column)
+    {
+        current_point = -1;
+    }
+    else{
+        m_current_col = current_point % m_column;
+        m_current_row = current_point / m_row;
+    }
+    row = m_current_row;
+    column = m_current_col;
+    return current_point;
+}

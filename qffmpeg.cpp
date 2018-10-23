@@ -242,6 +242,9 @@ void  QFFmpeg::decodeFrame(uint8_t* frameBuffer, int frameLength, long second, l
 
 		//发送获取一帧图像信号
 		QImage image((uchar*)dstSlice[0], m_videoWidth, m_videoHeight, QImage::Format_RGB32);
+//        cv::Mat cvimg( m_videoHeight,m_videoWidth, CV_8UC4, (void*)dstSlice[0], dstStride);
+//        cv::imshow("img", cvimg);
+//        cv::waitKey(1);
 
 		//在帧图像上打印时间戳信息并发送
 		QPainter pen(&image);
